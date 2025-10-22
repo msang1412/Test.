@@ -1,3 +1,29 @@
+getgenv().safig = {
+    AutoChooseTeam = true,
+    Team = "Pirates"
+}
+
+local function setTeam(teamName)
+    local CommF = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
+    pcall(function()
+        CommF:InvokeServer("SetTeam", teamName)
+    end)
+end
+
+task.spawn(function()
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    repeat task.wait() until game:IsLoaded()
+    if getgenv().safig.AutoChooseTeam and not player.Character then
+        repeat
+            task.wait(0.5)
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") then
+                setTeam(getgenv().safig.Team)
+            end
+        until player.Character or player.CharacterAdded:Wait()
+    end
+end)
 repeat
     wait()
 until game.IsLoaded and (game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()) and
