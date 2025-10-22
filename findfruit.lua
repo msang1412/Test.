@@ -1,15 +1,3 @@
-getgenv().safig = {
-    AutoChooseTeam = true,
-    Team = "Pirates"
-}
-
-local function setTeam(teamName)
-    local CommF = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
-    pcall(function()
-        CommF:InvokeServer("SetTeam", teamName)
-    end)
-end
-
 task.spawn(function()
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
