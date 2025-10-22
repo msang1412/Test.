@@ -1973,3 +1973,108 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         end
     end
 end)
+MainFarmTab:MakeSeperator("Auto World")
+
+MainFarmTab:MakeToggle("AutoNewWorld", {
+    ["Title"] = "Auto New World",
+    ["Content"] = "Automatically defeat Ice Admiral and progress to New World when reaching level 700",
+    ["Default"] = false,
+    ["Callback"] = function(Value)
+        _G.AutoNewWorld = Value
+        stopTeleport()
+        
+        if Value then
+            task.spawn(function()
+                local player = game:GetService("Players").LocalPlayer
+                
+                while _G.AutoNewWorld and task.wait(0.1) do
+                    if not World1 then break end
+                    
+                    local myLevel = player.Data.Level.Value
+                    if myLevel < 700 then 
+                        WazureV1:Notify({
+                            Title = "Auto New World",
+                            Content = "Level requirement not met (Need Level 700)",
+                            Logo = "rbxassetid://108593743519357",
+                            Time = 2
+                        })
+                        break 
+                    end
+                    
+                    local iceDoor = workspace.Map.Ice.Door
+                    if iceDoor.CanCollide == false and iceDoor.Transparency == 1 then
+                        -- Door is open, proceed to next area
+                        local cframe1 = CFrame.new(4849.29883, 5.65138149, 719.611877)
+                        repeat
+                            topos(cframe1)
+                            task.wait(0.1)
+                        until (cframe1.Position - player.Character.HumanoidRootPart.Position).Magnitude <= 3 or not _G.AutoNewWorld
+                        
+                        task.wait(1.1)
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("DressrosaQuestProgress", "Detective")
+                        task.wait(0.1)
+                        EquipTool("Key")
+                        
+                        local targetCFrame = CFrame.new(1347.7124, 37.3751602, -1325.6488)
+                        repeat
+                            topos(targetCFrame)
+                            task.wait(0.1)
+                        until (targetCFrame.Position - player.Character.HumanoidRootPart.Position).Magnitude <= 3 or not _G.AutoNewWorld
+                        task.wait(0.1)
+                    else
+                        -- Door is closed, fight Ice Admiral
+                        local iceAdmiral = workspace.Enemies:FindFirstChild("Ice Admiral [Lv. 700] [Boss]")
+                        if iceAdmiral then
+                            for _, v in pairs(workspace.Enemies:GetChildren()) do
+                                if v.Name == "Ice Admiral [Lv. 700] [Boss]" and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                                    local oldCFrameSecond = v.HumanoidRootPart.CFrame
+                                    repeat
+                                        task.wait(0.05)
+                                        if not _G.AutoNewWorld then break end
+                                        AutoHaki()
+                                        EquipTool(SelectWeapon)
+                                        v.HumanoidRootPart.CanCollide = false
+                                        v.Humanoid.WalkSpeed = 0
+                                        if v:FindFirstChild("Head") then
+                                            v.Head.CanCollide = false
+                                        end
+                                        v.HumanoidRootPart.CFrame = oldCFrameSecond
+                                        topos(v.HumanoidRootPart.CFrame * CFrame.new(0, 20, 5))
+                                        
+                                        -- Auto Attack
+                                        if _G.AutoLevel then
+                                            AttackInstance:Attack()
+                                        end
+                                    until not v.Parent or v.Humanoid.Health <= 0 or not _G.AutoNewWorld
+                                end
+                            end
+                        else
+                            -- Ice Admiral not spawned, try to spawn or travel
+                            if game:GetService("ReplicatedStorage"):FindFirstChild("Ice Admiral [Lv. 700] [Boss]") then
+                                topos(game:GetService("ReplicatedStorage"):FindFirstChild("Ice Admiral [Lv. 700] [Boss]").HumanoidRootPart.CFrame * CFrame.new(5, 10, 7))
+                            else
+                                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelDressrosa")
+                            end
+                        end
+                    end
+                end
+                
+                if not _G.AutoNewWorld then
+                    WazureV1:Notify({
+                        Title = "Auto New World",
+                        Content = "Stopped",
+                        Logo = "rbxassetid://108593743519357",
+                        Time = 1
+                    })
+                end
+            end)
+        else
+            WazureV1:Notify({
+                Title = "Auto New World", 
+                Content = "Disabled",
+                Logo = "rbxassetid://108593743519357",
+                Time = 1
+            })
+        end
+    end
+})
