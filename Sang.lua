@@ -1973,4 +1973,50 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         end
     end
 end)
+
+-- Biến để theo dõi trạng thái vòng lặp
+local randomFruitRunning = false
+local storeFruitRunning = false
+
+-- Auto Random Fruit Toggle (phiên bản tối ưu)
+SubFarmingTab:MakeToggle("RandomFF", {
+    ["Title"] = "Auto Random Fruit",
+    ["Content"] = "Automatic random devil fruit",
+    ["Default"] = false,
+    ["Callback"] = function(Value)
+        _G.Random_Auto = Value
+        if Value and not randomFruitRunning then
+            randomFruitRunning = true
+            spawn(function()
+                while _G.Random_Auto and wait(Sec) do
+                    pcall(function()
+                        replicated.Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                    end)
+                end
+                randomFruitRunning = false
+            end)
+        end
+    end
+})
+
+-- Auto Store Fruit Toggle (phiên bản tối ưu)
+SubFarmingTab:MakeToggle("StoredF", {
+    ["Title"] = "Auto Store Fruit",
+    ["Content"] = "Automatic store devil fruit",
+    ["Default"] = false,
+    ["Callback"] = function(Value)
+        _G.StoreF = Value
+        if Value and not storeFruitRunning then
+            storeFruitRunning = true
+            spawn(function()
+                while _G.StoreF and wait(Sec) do
+                    pcall(function()
+                        UpdStFruit()
+                    end)
+                end
+                storeFruitRunning = false
+            end)
+        end
+    end
+})
             
