@@ -1992,59 +1992,61 @@ local BringMobToggle = MainFarmTab:MakeToggle("Bring Mob", {
         end
     end
 })
--- Auto Random Fruit Toggle
-local randomFruitLoop
-MainFarmTab:MakeToggle("RandomFF", {
-    ["Title"] = "Auto Random Fruit",
-    ["Content"] = "Automatic random devil fruit",
-    ["Default"] = false,
-    ["Callback"] = function(Value)
-        _G.Random_Auto = Value
-        
-        -- Dừng vòng lặp cũ nếu có
-        if randomFruitLoop then
-            randomFruitLoop:Disconnect()
-            randomFruitLoop = nil
+local Replicated = game:GetService("ReplicatedStorage")
+local Player = game.Players.LocalPlayer
+
+-- Hàm lưu trái (nếu bạn có sẵn thì bỏ qua)
+function UpdStFruit()
+    pcall(function()
+        if Player.Data.DevilFruit.Value ~= "" then
+            Replicated.Remotes.CommF_:InvokeServer("StoreFruit", Player.Data.DevilFruit.Value)
+            print("Đã lưu trái:", Player.Data.DevilFruit.Value)
         end
-        
-        -- Bắt đầu vòng lặp mới nếu được bật
+    end)
+end
+
+-- Auto Random Fruit
+local RandomFruitThread
+MainFarmTab:MakeToggle("RandomFF", {
+    Title = "Auto Random Fruit",
+    Content = "",
+    Default = false,
+    Callback = function(Value)
+        _G.Random_Auto = Value
+        if RandomFruitThread then
+            RandomFruitThread:Disconnect()
+            RandomFruitThread = nil
+        end
         if Value then
-            randomFruitLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            RandomFruitThread = game:GetService("RunService").Heartbeat:Connect(function()
                 pcall(function()
-                    if _G.Random_Auto then
-                        replicated.Remotes.CommF_:InvokeServer("Cousin", "Buy")
-                    end
+                    Replicated.Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                    print("Đã random trái!")
                 end)
-                wait(Sec)
+                task.wait(5)
             end)
         end
     end
 })
 
--- Auto Store Fruit Toggle
-local storeFruitLoop
+-- Auto Store Fruit
+local StoreFruitThread
 MainFarmTab:MakeToggle("StoredF", {
-    ["Title"] = "Auto Store Fruit",
-    ["Content"] = "Automatic store devil fruit",
-    ["Default"] = false,
-    ["Callback"] = function(Value)
+    Title = "Auto Store Fruit",
+    Content = "",
+    Default = false,
+    Callback = function(Value)
         _G.StoreF = Value
-        
-        -- Dừng vòng lặp cũ nếu có
-        if storeFruitLoop then
-            storeFruitLoop:Disconnect()
-            storeFruitLoop = nil
+        if StoreFruitThread then
+            StoreFruitThread:Disconnect()
+            StoreFruitThread = nil
         end
-        
-        -- Bắt đầu vòng lặp mới nếu được bật
         if Value then
-            storeFruitLoop = game:GetService("RunService").Heartbeat:Connect(function()
-                if _G.StoreF then
-                    pcall(function()
-                        UpdStFruit()
-                    end)
-                end
-                wait(Sec)
+            StoreFruitThread = game:GetService("RunService").Heartbeat:Connect(function()
+                pcall(function()
+                    UpdStFruit()
+                end)
+                task.wait(5)
             end)
         end
     end
