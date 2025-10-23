@@ -2033,7 +2033,7 @@ MainFarmTab:MakeToggle("RandomFF", {
 local StoreFruitThread
 MainFarmTab:MakeToggle("StoredF", {
     Title = "Auto Store Fruit",
-    Content = "",
+    Content = "gei",
     Default = false,
     Callback = function(Value)
         _G.StoreF = Value
