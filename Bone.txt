@@ -1,0 +1,246 @@
+getgenv().AutoFarmBone = true
+getgenv().BonesBring = true
+
+local Bone = {
+    ["Reborn Skeleton"] = CFrame.new(-8769.58984, 142.13063, 6055.27637),
+    ["Living Zombie"] = CFrame.new(-10156.4531, 138.652481, 5964.5752),
+    ["Demonic Soul"] = CFrame.new(-9525.17188, 172.13063, 6152.30566),
+    ["Posessed Mummy"] = CFrame.new(-9570.88281, 5.81831884, 6187.86279)
+}
+
+local BonePos = CFrame.new(-9506.234375, 172.130615234375, 6117.0771484375)
+
+local plr = game.Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- Biến để lưu vị trí hiện tại
+local CurrentTarget = nil
+local CurrentTween = nil
+
+-- Hàm Tween của bạn
+local function TweenObject(Object, Pos, Speed)
+    Speed = Speed or 350
+    if not Object or not Pos then return end
+    
+    -- Hủy tween cũ nếu có
+    if CurrentTween then
+        CurrentTween:Cancel()
+        CurrentTween = nil
+    end
+    
+    local Distance = (Pos.Position - Object.Position).Magnitude
+    local info = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
+    CurrentTween = TweenService:Create(Object, info, {CFrame = Pos})
+    CurrentTween:Play()
+end
+
+-- Hàm GetMobPosition của bạn
+local function GetMobPosition(EnemiesName)
+    local pos = Vector3.zero
+    local count = 0
+    for _, v in pairs(workspace.Enemies:GetChildren()) do
+        if v.Name == EnemiesName and v:FindFirstChild("HumanoidRootPart") then
+            pos += v.HumanoidRootPart.Position
+            count += 1
+        end
+    end
+    if count == 0 then
+        return nil
+    end
+    return pos / count
+end
+
+-- Gom mob lại gần nhau
+local function BringMob(enable)
+    if not enable then return end
+    local enemies = workspace.Enemies:GetChildren()
+    if #enemies == 0 then return end
+    local totalpos = {}
+    
+    -- Lấy vị trí trung bình từng loại mob
+    for _, v in pairs(enemies) do
+        if not totalpos[v.Name] then
+            totalpos[v.Name] = GetMobPosition(v.Name)
+        end
+    end
+    
+    -- Gom mob lại
+    for _, v in pairs(workspace.Enemies:GetChildren()) do
+        if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+            local hrp = v.HumanoidRootPart
+            local humanoid = v.Humanoid
+            if humanoid.Health > 0 and (hrp.Position - plr.Character.HumanoidRootPart.Position).Magnitude <= 350 then
+                local mobPos = totalpos[v.Name]
+                if mobPos then
+                    local TargetCFrame = CFrame.new(mobPos.X, mobPos.Y, mobPos.Z)
+                    local Distance = (hrp.Position - TargetCFrame.Position).Magnitude
+                    if Distance > 3 and Distance <= 280 then
+                        TweenObject(hrp, TargetCFrame, 300)
+                        hrp.CanCollide = false
+                        humanoid.WalkSpeed = 0
+                        humanoid.JumpPower = 0
+                        if humanoid:FindFirstChild("Animator") then
+                            humanoid.Animator:Destroy()
+                        end
+                        pcall(function()
+                            sethiddenproperty(plr, "SimulationRadius", math.huge)
+                        end)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Auto Equip Melee
+function EquipMelee()
+    pcall(function()
+        for _, tool in pairs(plr.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+                plr.Character.Humanoid:EquipTool(tool)
+                break
+            end
+        end
+    end)
+end
+
+-- Fast Attack Function
+function FastAttack()
+    pcall(function()
+        local character = plr.Character
+        if character and character:FindFirstChildOfClass("Tool") then
+            local tool = character:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("RemoteEvent") then
+                tool.RemoteEvent:FireServer()
+            end
+        end
+    end)
+end
+
+-- Hàm giữ vị trí trên đầu mob mượt mà
+local function SmoothStayAbove(targetHRP)
+    if not targetHRP or not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local HRP = plr.Character.HumanoidRootPart
+    local targetPos = targetHRP.Position + Vector3.new(0, 25, 0)
+    
+    -- Di chuyển trực tiếp không dùng tween để tránh giật
+    HRP.CFrame = CFrame.new(targetPos)
+end
+
+-- Bones Bring Function
+spawn(function()
+    while wait(0.2) do
+        if getgenv().BonesBring and getgenv().AutoFarmBone then
+            pcall(function()
+                for _, v in ipairs(workspace.Enemies:GetChildren()) do
+                    if Bone[v.Name] and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
+                        v.HumanoidRootPart.CFrame = Bone[v.Name]
+                        v.Head.CanCollide = false
+                        v.Humanoid.Sit = false
+                        v.Humanoid:ChangeState(11)
+                        wait(0.1)
+                        v.Humanoid:ChangeState(14)
+                        v.HumanoidRootPart.CanCollide = false
+                        v.Humanoid.JumpPower = 0
+                        v.Humanoid.WalkSpeed = 0
+                        local animator = v.Humanoid:FindFirstChild("Animator")
+                        if animator then
+                            animator:Destroy()
+                        end
+                        sethiddenproperty(plr, "SimulationRadius", math.huge)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Auto Attack Loop
+spawn(function()
+    while wait(0.1) do
+        if getgenv().AutoFarmBone then
+            FastAttack()
+        end
+    end
+end)
+
+-- Loop giữ vị trí trên đầu mob mượt mà
+spawn(function()
+    while wait() do
+        if getgenv().AutoFarmBone and CurrentTarget and CurrentTarget:FindFirstChild("HumanoidRootPart") then
+            SmoothStayAbove(CurrentTarget.HumanoidRootPart)
+        end
+    end
+end)
+
+-- Main Bone Farm Loop
+spawn(function()
+    while wait(0.1) do
+        if not getgenv().AutoFarmBone then 
+            CurrentTarget = nil
+            break 
+        end
+        
+        pcall(function()
+            local enemies = workspace.Enemies:GetChildren()
+            local foundEnemy = false
+            
+            for _, v in pairs(enemies) do
+                if v.Name == "Reborn Skeleton" or v.Name == "Living Zombie" or v.Name == "Demonic Soul" or v.Name == "Posessed Mummy" then
+                    if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                        foundEnemy = true
+                        CurrentTarget = v
+                        
+                        repeat 
+                            wait()
+                            if not getgenv().AutoFarmBone then break end
+                            
+                            -- Auto Haki
+                            if not plr.Character:FindFirstChild("HasBuso") then
+                                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
+                            end
+                            
+                            -- Equip Melee Weapon
+                            EquipMelee()
+                            
+                            -- Fast Attack
+                            FastAttack()
+                            
+                            -- Gom mob
+                            BringMob(true)
+                            
+                            if v:FindFirstChild("HumanoidRootPart") then
+                                v.HumanoidRootPart.CanCollide = false
+                                v.Humanoid.WalkSpeed = 0
+                                v.Head.CanCollide = false
+                                getgenv().BonesBring = true
+                                
+                                -- Giữ vị trí trên đầu mob liên tục
+                                SmoothStayAbove(v.HumanoidRootPart)
+                            end
+                            
+                        until not getgenv().AutoFarmBone or not v.Parent or v.Humanoid.Health <= 0
+                        
+                        CurrentTarget = nil
+                    end
+                end
+            end
+            
+            if not foundEnemy then
+                CurrentTarget = nil
+                TweenObject(plr.Character.HumanoidRootPart, BonePos, 350)
+                
+                for _, v in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+                    if v.Name == "Reborn Skeleton" or v.Name == "Living Zombie" or v.Name == "Demonic Soul" or v.Name == "Posessed Mummy" then
+                        local targetPos = v.HumanoidRootPart.Position + Vector3.new(0, 25, 0)
+                        TweenObject(plr.Character.HumanoidRootPart, CFrame.new(targetPos), 350)
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+print("Auto Farm Bone with Melee Started!")
