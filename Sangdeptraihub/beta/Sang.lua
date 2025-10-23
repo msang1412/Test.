@@ -1992,3 +1992,60 @@ local BringMobToggle = MainFarmTab:MakeToggle("Bring Mob", {
         end
     end
 })
+-- Auto Random Fruit Toggle
+local randomFruitLoop
+MainFarmTab:MakeToggle("RandomFF", {
+    ["Title"] = "Auto Random Fruit",
+    ["Content"] = "Automatic random devil fruit",
+    ["Default"] = false,
+    ["Callback"] = function(Value)
+        _G.Random_Auto = Value
+        
+        -- Dừng vòng lặp cũ nếu có
+        if randomFruitLoop then
+            randomFruitLoop:Disconnect()
+            randomFruitLoop = nil
+        end
+        
+        -- Bắt đầu vòng lặp mới nếu được bật
+        if Value then
+            randomFruitLoop = game:GetService("RunService").Heartbeat:Connect(function()
+                pcall(function()
+                    if _G.Random_Auto then
+                        replicated.Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                    end
+                end)
+                wait(Sec)
+            end)
+        end
+    end
+})
+
+-- Auto Store Fruit Toggle
+local storeFruitLoop
+MainFarmTab:MakeToggle("StoredF", {
+    ["Title"] = "Auto Store Fruit",
+    ["Content"] = "Automatic store devil fruit",
+    ["Default"] = false,
+    ["Callback"] = function(Value)
+        _G.StoreF = Value
+        
+        -- Dừng vòng lặp cũ nếu có
+        if storeFruitLoop then
+            storeFruitLoop:Disconnect()
+            storeFruitLoop = nil
+        end
+        
+        -- Bắt đầu vòng lặp mới nếu được bật
+        if Value then
+            storeFruitLoop = game:GetService("RunService").Heartbeat:Connect(function()
+                if _G.StoreF then
+                    pcall(function()
+                        UpdStFruit()
+                    end)
+                end
+                wait(Sec)
+            end)
+        end
+    end
+})
